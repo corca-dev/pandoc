@@ -28,6 +28,9 @@ import Control.Applicative ((<|>), optional)
 import Control.Monad (guard, mzero)
 import qualified Data.Map as M
 import Data.Text (Text)
+import Text.Pandoc.Logging (LogMessage(SkippedContent))
+import Text.Pandoc.Options (extensionEnabled, readerExtensions)
+import Text.Pandoc.Extensions (Extension(Ext_raw_tex))
 
 withMathMode :: PandocMonad m => LP m a -> LP m a
 withMathMode p = do
@@ -84,11 +87,30 @@ mathEnv name = withMathMode $ do
   res <- manyTill anyTok (end_ name)
   return $ trimr $ untokenize res
 
+-- | Handle unknown inline environments by preserving as raw LaTeX or skipping
+rawInlineEnv :: PandocMonad m => Text -> LP m Inlines
+rawInlineEnv name = do
+  exts <- getOption readerExtensions
+  let parseRaw = extensionEnabled Ext_raw_tex exts
+  let beginCommand = "\\begin{" <> name <> "}"
+  pos <- getPosition
+  if parseRaw
+    then do
+      -- withRaw captures everything the inner parser consumes
+      (_, raw) <- withRaw $ manyTill anyTok (end_ name)
+      -- raw contains content + \end{name}, so we only need to add \begin{name}
+      return $ rawInline "latex" $ beginCommand <> untokenize raw
+    else do
+      -- Skip the environment content and report it
+      _ <- manyTill anyTok (end_ name)
+      report $ SkippedContent beginCommand pos
+      return mempty
+
 inlineEnvironment :: PandocMonad m => LP m Inlines
 inlineEnvironment = try $ do
   controlSeq "begin"
   name <- untokenize <$> braced
-  M.findWithDefault mzero name inlineEnvironments
+  M.findWithDefault (rawInlineEnv name) name inlineEnvironments
 
 inlineEnvironmentNames :: [Text]
 inlineEnvironmentNames =
