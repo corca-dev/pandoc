@@ -1,0 +1,24 @@
+# Example Dockerfile for pandoc-latex-html5
+FROM haskell:9.6-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy source
+WORKDIR /build
+COPY . .
+
+# Build and install
+RUN make JOBS=$(nproc) && make install && make clean
+
+# Cleanup build artifacts
+RUN rm -rf /build /root/.cabal/store
+
+WORKDIR /workspace
+
+# Test installation
+RUN pandoc-latex-html5 --help
+
+ENTRYPOINT ["pandoc-latex-html5"]

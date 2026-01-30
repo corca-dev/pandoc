@@ -1,0 +1,55 @@
+-- Use the patched pandoc from parent directory
+packages: 
+  .
+  ../.
+
+
+-- Speed up compilation significantly
+-- Disable optimization for all dependencies (only optimize final executable)
+package *
+  optimization: 0
+  documentation: False
+  
+package pandoc-latex-html5
+  optimization: 2
+  documentation: False
+
+-- Disable HTTP support in Pandoc to reduce dependencies
+package pandoc
+  flags: -http
+
+-- Control parallelism via CLI: cabal build --jobs=N
+-- Default uses all available cores
+
+-- Use same dependency versions as parent project
+-- These are required for compatibility with the patched Pandoc
+source-repository-package
+  type: git
+  location: https://github.com/jgm/asciidoc-hs.git
+  tag: 6b7d77db10f83cb58dc8059ac7bd739d5e37570b
+
+source-repository-package
+  type: git
+  location: https://github.com/jgm/citeproc.git
+  tag: 777a916be683a40e9b5e17da25816917b6fb1208
+
+source-repository-package
+  type: git
+  location: https://github.com/jgm/typst-hs.git
+  tag: b4399d44d38c1935c02db9bfd62fb5a4450ad7af
+
+source-repository-package
+  type: git
+  location: https://github.com/jgm/texmath.git
+  tag: e3c43559e98e46b3fd5e5a5719f64cc4f1f5ef0c
+
+source-repository-package
+  type: git
+  location: https://github.com/jgm/djoths.git
+  tag: 67afd6c0485898b9a00e23794fc08e1d9d1e3afb
+
+source-repository-package
+  type: git
+  location: https://github.com/jgm/skylighting.git
+  subdir: skylighting-format-blaze-html
+  tag: 06f07acba1badd75bd923751017c9d8e4e80b3a2
