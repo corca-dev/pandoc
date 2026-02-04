@@ -49,8 +49,28 @@ clean-all:
 
 install: build
 	@echo "Installing $(BINARY) to $(BINDIR)..."
-	install -d $(BINDIR)
-	install -m 755 $$(cabal list-bin $(BINARY)) $(BINDIR)/$(BINARY)
+	@# Check if we can write to the target directory or its parent
+	@if [ -d "$(BINDIR)" ]; then \
+		if [ -w "$(BINDIR)" ]; then \
+			install -m 755 $$(cabal list-bin $(BINARY)) $(BINDIR)/$(BINARY); \
+		else \
+			echo "$(BINDIR) requires elevated permissions, using sudo..."; \
+			sudo install -m 755 $$(cabal list-bin $(BINARY)) $(BINDIR)/$(BINARY); \
+		fi \
+	else \
+		parent_dir=$$(dirname "$(BINDIR)"); \
+		while [ ! -e "$$parent_dir" ] && [ "$$parent_dir" != "/" ]; do \
+			parent_dir=$$(dirname "$$parent_dir"); \
+		done; \
+		if [ -w "$$parent_dir" ]; then \
+			install -d $(BINDIR); \
+			install -m 755 $$(cabal list-bin $(BINARY)) $(BINDIR)/$(BINARY); \
+		else \
+			echo "Installation requires elevated permissions, using sudo..."; \
+			sudo install -d $(BINDIR); \
+			sudo install -m 755 $$(cabal list-bin $(BINARY)) $(BINDIR)/$(BINARY); \
+		fi \
+	fi
 	@echo "Installed to $(BINDIR)/$(BINARY)"
 
 test: build
@@ -66,7 +86,7 @@ help:
 	@echo "Available targets:"
 	@echo "  make              - Build the binary (default)"
 	@echo "  make JOBS=N       - Build with N parallel jobs"
-	@echo "  make install      - Install to $(BINDIR)"
+	@echo "  make install      - Install to $(BINDIR) (auto-detects if sudo needed)"
 	@echo "  make PREFIX=/path - Install to /path/bin"
 	@echo "  make test         - Run a simple test"
 	@echo ""
@@ -75,10 +95,11 @@ help:
 	@echo "  make clean-all    - Remove local build cache (recompiles this package)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make JOBS=4                    # Build with 4 cores"
-	@echo "  sudo make install              # Install to /usr/local/bin"
-	@echo "  sudo make PREFIX=/usr install  # Install to /usr/bin"
-	@echo "  make clean-all && make         # Clean rebuild of this package"
+	@echo "  make JOBS=4                # Build with 4 cores"
+	@echo "  make install               # Install to /usr/local/bin (uses sudo if needed)"
+	@echo "  make PREFIX=/usr install   # Install to /usr/bin (uses sudo if needed)"
+	@echo "  make PREFIX=~/.local install  # Install to ~/.local/bin (no sudo needed)"
+	@echo "  make clean-all && make     # Clean rebuild of this package"
 	@echo ""
 	@echo "Requirements:"
 	@echo "  - cabal-install (GHC Haskell build tool)"

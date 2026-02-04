@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {- |
    Minimal Pandoc: LaTeX → HTML5 converter
    Only supports LaTeX input and HTML5 output with MathJax
@@ -6,10 +7,21 @@
 module Main where
 
 import qualified Data.Text.IO as TIO
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString as BS
+import qualified Data.Text as T
 import Text.Pandoc
+import Text.Pandoc.Error (PandocError(..))
+import Text.Pandoc.Templates (compileTemplate, WithDefaultPartials(..), Template)
+import Control.Monad.Except (throwError)
 import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hPutStrLn, stderr)
+import Data.FileEmbed (embedFile)
+
+-- Embed the HTML5 template at compile time (minimal template without styles)
+embeddedTemplate :: BS.ByteString
+embeddedTemplate = $(embedFile "template.html5")
 
 -- MathJax configuration for HTML output
 mathJaxOptions :: WriterOptions
@@ -74,8 +86,12 @@ convert opts = do
     -- Configure writer with template if standalone
     writerOpts <- if optStandalone opts
       then do
-        tmpl <- compileDefaultTemplate "html5"
-        return $ mathJaxOptions { writerTemplate = Just tmpl }
+        -- Use embedded template instead of compileDefaultTemplate
+        let templateText = TE.decodeUtf8 embeddedTemplate
+        res <- runWithDefaultPartials $ compileTemplate "html5" templateText
+        case res of
+          Left err -> throwError $ PandocTemplateError (T.pack err)
+          Right tmpl -> return $ mathJaxOptions { writerTemplate = Just tmpl }
       else
         return mathJaxOptions
     

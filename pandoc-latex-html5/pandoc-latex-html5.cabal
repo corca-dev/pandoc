@@ -10,6 +10,9 @@ build-type: Simple
 executable pandoc-latex-html5
   main-is: pandoc-latex-html5.hs
   
+  -- Include template as data file
+  data-files: default.html5
+  
   build-depends: 
       base >= 4.18 && < 5
     , pandoc == 3.8.3
@@ -17,6 +20,9 @@ executable pandoc-latex-html5
     , text >= 1.1.1.0 && < 2.2
     , doctemplates >= 0.11 && < 0.12
     , mtl >= 2.2 && < 2.4
+    , bytestring >= 0.10 && < 0.13
+    , template-haskell >= 2.16 && < 2.23
+    , file-embed >= 0.0.11 && < 0.1
   
   default-language: Haskell2010
   
