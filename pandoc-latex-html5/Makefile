@@ -74,12 +74,12 @@ install: build
 	@echo "Installed to $(BINDIR)/$(BINARY)"
 
 test: build
-	@echo "Running test conversion..."
-	@printf '\\documentclass{article}\n\\begin{document}\nTest: \\[ E=mc^2 \\]\n\\end{document}\n' > /tmp/test-pandoc-latex-html5.tex
-	$$(cabal list-bin $(BINARY)) -s /tmp/test-pandoc-latex-html5.tex -o /tmp/test-pandoc-latex-html5.html
-	@echo "Test HTML generated at /tmp/test-pandoc-latex-html5.html"
-	@grep -q "mathjax" /tmp/test-pandoc-latex-html5.html && echo "✓ MathJax included" || echo "✗ MathJax missing"
-	@grep -q "E=mc" /tmp/test-pandoc-latex-html5.html && echo "✓ Math formula found" || echo "✗ Math formula missing"
+	@echo "Running test conversion with TikZ filter..."
+	$$(cabal list-bin $(BINARY)) --lua-filter test/tikz.lua -s test/test.tex -o test/output.html
+	@echo "Test HTML generated at test/output.html"
+	@grep -q "mathjax" test/output.html && echo "✓ MathJax included" || echo "✗ MathJax missing"
+	@grep -q "x\^2" test/output.html && echo "✓ Math formula found" || echo "✗ Math formula missing"
+	@grep -q "data:image/svg+xml,%3C" test/output.html && echo "✓ TikZ converted to URL-encoded SVG" || echo "✗ TikZ SVG missing"
 	@echo "Test passed!"
 
 help:
@@ -88,7 +88,7 @@ help:
 	@echo "  make JOBS=N       - Build with N parallel jobs"
 	@echo "  make install      - Install to $(BINDIR) (auto-detects if sudo needed)"
 	@echo "  make PREFIX=/path - Install to /path/bin"
-	@echo "  make test         - Run a simple test"
+	@echo "  make test         - Run test conversion with TikZ filter"
 	@echo ""
 	@echo "Cleaning targets:"
 	@echo "  make clean        - Clean local build artifacts (fast, safe)"

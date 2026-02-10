@@ -13,7 +13,10 @@ import qualified Data.Text as T
 import Text.Pandoc
 import Text.Pandoc.Error (PandocError(..))
 import Text.Pandoc.Templates (compileTemplate, WithDefaultPartials(..), Template)
+import Text.Pandoc.Lua (applyFilter)
+import Text.Pandoc.Filter (Environment(..))
 import Control.Monad.Except (throwError)
+import Control.Monad (foldM)
 import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hPutStrLn, stderr)
@@ -30,10 +33,10 @@ mathJaxOptions = def
   , writerHighlightMethod = NoHighlighting  -- Disable syntax highlighting to reduce dependencies
   }
 
--- Reader options with common LaTeX extensions
+-- Reader options with common LaTeX extensions, including raw_tex
 latexReaderOptions :: ReaderOptions
 latexReaderOptions = def
-  { readerExtensions = getDefaultExtensions "latex"
+  { readerExtensions = enableExtension Ext_raw_tex $ getDefaultExtensions "latex"
   }
 
 printUsage :: IO ()
@@ -44,23 +47,29 @@ printUsage = do
   putStrLn "Minimal Pandoc: Converts LaTeX to HTML5 with MathJax support"
   putStrLn ""
   putStrLn "Options:"
-  putStrLn "  -h, --help       Show this help message"
-  putStrLn "  -s, --standalone Generate standalone HTML document (default: fragment)"
-  putStrLn "  -o FILE          Write output to FILE (default: stdout)"
+  putStrLn "  -h, --help           Show this help message"
+  putStrLn "  -s, --standalone     Generate standalone HTML document (default: fragment)"
+  putStrLn "  -o FILE              Write output to FILE (default: stdout)"
+  putStrLn "  --lua-filter FILE    Apply Lua filter to the document (can be repeated)"
+  putStrLn ""
+  putStrLn "Features:"
+  putStrLn "  - Supports raw_tex extension (preserves tikzpicture and other raw LaTeX)"
+  putStrLn "  - Compatible with Lua filters for custom transformations"
   putStrLn ""
   putStrLn "Examples:"
   putStrLn $ "  " ++ progName ++ " input.tex > output.html"
   putStrLn $ "  " ++ progName ++ " -s input.tex -o output.html"
-  putStrLn $ "  " ++ progName ++ " --standalone input.tex"
+  putStrLn $ "  " ++ progName ++ " --lua-filter tikz.lua -s input.tex -o output.html"
 
 data Options = Options
   { optStandalone :: Bool
   , optInputFile :: FilePath
   , optOutputFile :: Maybe FilePath
+  , optLuaFilters :: [FilePath]
   }
 
 parseArgs :: [String] -> Either String Options
-parseArgs args = go args (Options False "" Nothing)
+parseArgs args = go args (Options False "" Nothing [])
   where
     go [] opts
       | null (optInputFile opts) = Left "No input file specified"
@@ -70,6 +79,7 @@ parseArgs args = go args (Options False "" Nothing)
     go ("-s":rest) opts = go rest opts { optStandalone = True }
     go ("--standalone":rest) opts = go rest opts { optStandalone = True }
     go ("-o":file:rest) opts = go rest opts { optOutputFile = Just file }
+    go ("--lua-filter":file:rest) opts = go rest opts { optLuaFilters = optLuaFilters opts ++ [file] }
     go (file:rest) opts
       | null (optInputFile opts) = go rest opts { optInputFile = file }
       | otherwise = Left $ "Unexpected argument: " ++ file
@@ -95,7 +105,13 @@ convert opts = do
       else
         return mathJaxOptions
     
-    writeHtml5String writerOpts doc
+    -- Apply Lua filters if specified
+    let env = Environment latexReaderOptions writerOpts
+    doc' <- foldM (\d filterPath -> applyFilter env ["html5"] filterPath d) 
+                  doc 
+                  (optLuaFilters opts)
+    
+    writeHtml5String writerOpts doc'
   
   case result of
     Left err -> do

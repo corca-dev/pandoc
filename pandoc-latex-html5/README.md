@@ -11,6 +11,8 @@ optimized for fast compilation times.
 - MathJax 3 for math rendering
 - Standalone HTML documents or fragments
 - ~60-70% faster compilation than full Pandoc
+- **raw_tex extension enabled** - preserves tikzpicture and other raw LaTeX environments
+- **Lua filter support** - compatible with pandoc Lua filters (e.g., for TikZ → SVG conversion)
 - **Uses patched Pandoc** from parent directory with improved LaTeX environment handling
 
 ## Building
@@ -48,6 +50,16 @@ sudo make install
 
 Installs to `/usr/local/bin/pandoc-latex-html5`
 
+**Note for Lua filters**: If using Lua filters, you may need to install pandoc's data files:
+
+```bash
+# Copy data files from the pandoc source
+mkdir -p ~/.cabal/share/x86_64-linux-ghc-9.6.7/pandoc-3.8.3/
+cp -r ../data ~/.cabal/share/x86_64-linux-ghc-9.6.7/pandoc-3.8.3/
+```
+
+Or install the full pandoc package which includes these files.
+
 ### Other commands
 
 ```bash
@@ -64,9 +76,24 @@ pandoc-latex-html5 input.tex
 # Standalone HTML document
 pandoc-latex-html5 -s input.tex -o output.html
 
+# With Lua filter (e.g., convert TikZ to SVG)
+pandoc-latex-html5 --lua-filter tikz.lua -s input.tex -o output.html
+
+# Multiple filters can be chained
+pandoc-latex-html5 --lua-filter filter1.lua --lua-filter filter2.lua input.tex
+
 # Help
 pandoc-latex-html5 --help
 ```
+
+### TikZ to SVG Conversion
+
+The tool supports converting TikZ diagrams to SVG using a Lua filter. You'll need:
+- `pdflatex` (from TeX Live or similar)
+- `pdf2svg` (SVG conversion tool)
+- A Lua filter (see [pandoc's lua-filters documentation](https://pandoc.org/lua-filters.html))
+
+Example filter available in pandoc source: `doc/lua-filters.md` (search for "tikz")
 
 ## Docker
 
