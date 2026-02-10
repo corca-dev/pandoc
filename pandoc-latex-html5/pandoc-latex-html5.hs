@@ -15,6 +15,7 @@ import Text.Pandoc.Error (PandocError(..))
 import Text.Pandoc.Templates (compileTemplate, WithDefaultPartials(..), Template)
 import Text.Pandoc.Lua (applyFilter)
 import Text.Pandoc.Filter (Environment(..))
+import Text.Pandoc.Class (setInputFiles)
 import Control.Monad.Except (throwError)
 import Control.Monad (foldM)
 import System.Environment (getArgs, getProgName)
@@ -91,6 +92,9 @@ convert opts = do
   
   -- Run conversion
   result <- runIO $ do
+    -- Set input files so PANDOC_STATE.input_files is available to filters
+    setInputFiles [optInputFile opts]
+    
     doc <- readLaTeX latexReaderOptions input
     
     -- Configure writer with template if standalone
