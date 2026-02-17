@@ -848,7 +848,13 @@ epigraph = do
 section :: PandocMonad m => Attr -> Int -> LP m Blocks
 section (ident, classes, kvs) lvl = do
   skipopts
-  contents <- grouped inline
+  -- Try to parse title, with fallback to capturing raw tokens
+  contents <- grouped inline <|> do
+    pos <- getPosition
+    report $ SkippedContent "Section title contains unparsable content, using raw text" pos
+    -- Fallback: capture title as raw tokens and convert to string
+    toks <- braced
+    return $ text $ untokenize toks
   lab <- option ident $
           try (spaces >> controlSeq "label"
                >> spaces >> untokenize <$> braced)
