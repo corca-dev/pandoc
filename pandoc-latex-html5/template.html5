@@ -34,6 +34,26 @@ $endfor$
 $if(date)$
 <p class="date">$date$</p>
 $endif$
+$if(abstract)$
+<div class="abstract">
+<div class="abstract-title">$abstract-title$</div>
+$abstract$
+</div>
+$endif$
+$if(address)$
+<div class="addresses">
+$for(address)$
+<p class="address">$address$</p>
+$endfor$
+</div>
+$endif$
+$if(email)$
+<div class="emails">
+$for(email)$
+<p class="email">$email$</p>
+$endfor$
+</div>
+$endif$
 </header>
 $endif$
 $if(toc)$
