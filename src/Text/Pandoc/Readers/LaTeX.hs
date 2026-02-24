@@ -327,7 +327,7 @@ inlineCommand' = try $ do
   lookupListDefault raw names inlineCommands
 
 tok :: PandocMonad m => LP m Inlines
-tok = tokWith inline
+tok = tokWith inlineWithFallback
 
 unescapeURL :: Text -> Text
 unescapeURL = T.concat . go . T.splitOn "\\"
@@ -685,6 +685,16 @@ inline = do
     Esc1        -> str . T.singleton <$> primEscape
     Esc2        -> str . T.singleton <$> primEscape
     _           -> mzero
+
+-- | Like inline, but when parsing fails, return the token as code
+-- This is used for error recovery in commands like \emph that should
+-- gracefully handle block-level content
+inlineWithFallback :: PandocMonad m => LP m Inlines
+inlineWithFallback = inline <|> fallbackToken
+  where
+    fallbackToken = do
+      tok <- anyTok
+      return $ code (untoken tok)
 
 inlines :: PandocMonad m => LP m Inlines
 inlines = mconcat <$> many inline

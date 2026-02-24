@@ -57,6 +57,8 @@ And here is a more complex diagram:
 	}
 \end{tikzpicture}
 
+This code is invalid and should be presented as a source:
+
 % invalid code should not break the whole document
 \emph{For $\mathcal{X}=\M_{\LL}(\bb{K})$, the solution set $\mathcal{V}$ is nonempty, compact, and convex. Its extreme points are $[\LL]$-splines of the form
 \begin{align}
@@ -66,8 +68,16 @@ f(t_1,t_2)=&\sum_{k=1}^Ka_{k}g_{\Ls_1}(t_1-x_{1,k}) g_{\Ls_2}(t_2-x_{2,k})+\sum_
 \end{align}    
 The parameters of \eqref{eq:1.7} satisfy 
 \begin{itemize}
-    \item []\emph{Sparsity:} The number of spline atoms $\left(K+\sum_{n=1}^{N_1}K_{1,n}+\sum_{n=1}^{N_2}K_{2,n}\right)$ is upper-bounded by $(M-N_1N_2)$.
+    \item []\emph{Sparsity:} The numbers of spline atoms $\left(K+\sum_{n=1}^{N_1}K_{1,n}+\sum_{n=1}^{N_2}K_{2,n}\right)$ is upper-bounded by $(M-N_1N_2)$.
     \item []\emph{Localization:} The knots are localized as $(x_{1,k},x_{2,k})\in\bb{K},y_{n,m}\in\mathrm{K}_2$, and $z_{n',m'}\in\mathrm{K}_1.$ 
 \end{itemize}}
+
+
+This should work:
+
+\begin{itemize}
+    \item []\emph{Sparsity:} The number of spline atoms $\left(K+\sum_{n=1}^{N_1}K_{1,n}+\sum_{n=1}^{N_2}K_{2,n}\right)$ is upper-bounded by $(M-N_1N_2)$.
+    \item []\emph{Localization:} The knots are localized as $(x_{1,k},x_{2,k})\in\bb{K},y_{n,m}\in\mathrm{K}_2$, and $z_{n',m'}\in\mathrm{K}_1.$ 
+\end{itemize}
 
 \end{document}
